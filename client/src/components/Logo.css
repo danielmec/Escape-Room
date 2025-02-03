@@ -1,0 +1,18 @@
+/* client/src/components/Logo.css */
+.logo-container {
+  position: absolute;   /* Posiziona il contenitore in modo assoluto */
+  top: 20px;            /* Distanza dal bordo superiore */
+  left: 20px;           /* Distanza dal bordo sinistro */
+}
+
+.logo-text {
+  font-size: 2rem;
+  font-weight: bold;
+  text-decoration: none;
+  color: #e30b0b;       /* Colore arancione */
+  transition: color 0.3s ease;
+}
+
+.logo-text:hover {
+  color: #ff6600;       /* Arancione più scuro al passaggio del mouse */
+}

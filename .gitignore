@@ -1,0 +1,12 @@
+# Node modules
+node_modules/
+
+# Cartelle di build
+build/
+dist/
+
+# File di log
+*.log
+
+# Altri file temporanei
+.DS_Store
