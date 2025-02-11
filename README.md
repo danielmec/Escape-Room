@@ -28,3 +28,17 @@ Escape Room Multiplayer Game is a real-time web application where players collab
 1. **Clone the repository:**
    ```bash
    git clone https://github.com/danielmec/Escape-Room.git
+
+2. **Install dependencies:**
+    cd client
+    npm install
+    cd ../server
+    npm install
+
+3. **Run server and client :**
+    cd server
+    node server.js
+    cd client
+    npm start
+
+
