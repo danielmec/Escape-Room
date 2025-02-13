@@ -1,0 +1,24 @@
+.options-container {
+    background-image: url('../assets/backgorund_game.webp');
+    background-size: cover;
+    background-position: center;
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .home-button {
+    padding: 15px 30px;
+    font-size: 1.2rem;
+    background-color: #FFA500; /* Colore arancione dominante */
+    color: #fff;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+  }
+  
+  .home-button:hover {
+    background-color: #FF4500; /* Sfumatura di rosso acceso al passaggio del mouse */
+  }

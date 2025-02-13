@@ -1,11 +1,21 @@
-// client/src/components/Options.jsx
 import React from 'react';
-
+import { useMusic } from './MusicContext';
+import './Options.css';
+import Logo from './Logo';
+  
 const Options = () => {
+  const { musicOn, setMusicOn } = useMusic();
+
+  const toggleMusic = () => {
+    setMusicOn(!musicOn);
+  };
+
   return (
-    <div className="page-container">
-      <h1>Game Options</h1>
-      <p>Configure your game settings here.</p>
+    <div className="options-container">
+      <Logo />
+      <button className='home-button' onClick={toggleMusic}>
+        {musicOn ? 'Disattiva musica' : 'Attiva musica'}
+      </button>
     </div>
   );
 };

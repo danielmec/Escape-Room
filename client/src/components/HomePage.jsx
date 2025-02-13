@@ -7,7 +7,7 @@ const HomePage = () => {
   const navigate = useNavigate();
 
   const handleCreateLobby = () => {
-    navigate('/lobby');
+    navigate('createlobby');
   };
 
   const handleJoinLobby = () => {

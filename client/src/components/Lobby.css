@@ -1,0 +1,141 @@
+/* client/src/components/Lobby.css */
+
+/* Imposta lo sfondo con la stessa immagine della HomePage */
+.lobby-container {
+    background-image: url('../assets/backgorund_game.webp'); /* Assicurati che il percorso sia corretto */
+    background-size: cover;
+    background-position: center;
+    min-height: 100vh;
+    position: relative;
+    font-family: Arial, sans-serif;
+    color: #fff;
+  }
+  
+  .lobby-overlay {
+    background: rgba(0, 0, 0, 0.7);
+    padding: 20px;
+    min-height: 100vh;
+  }
+  
+  /* Informazioni della lobby */
+  .lobby-info {
+    text-align: center;
+    margin-bottom: 20px;
+  }
+  
+  .lobby-info p {
+    margin: 5px 0;
+    font-size: 1.1rem;
+  }
+  
+  /* Layout del contenuto della lobby */
+  .lobby-content {
+    display: flex;
+    gap: 20px;
+    margin-top: 20px;
+  }
+  
+  /* Sezione degli utenti */
+  .users-list {
+    flex: 1;
+    background-color: rgba(240, 240, 240, 0.9);
+    padding: 10px;
+    border-radius: 5px;
+    color: #333;
+  }
+  
+  .users-list h2 {
+    margin-bottom: 10px;
+    color: #FFA500;
+  }
+  
+  .users-list ul {
+    list-style-type: none;
+    padding: 0;
+  }
+  
+  .users-list li {
+    padding: 5px;
+    border-bottom: 1px solid #ccc;
+  }
+  
+ /* Sezione della chat */
+.chat-section {
+    flex: 2;
+    background-color: rgba(224, 224, 224, 0.9);
+    padding: 10px;
+    border-radius: 5px;
+    max-width: 600px;
+    /* Rimuoviamo la proprietà flex-direction: column; se non necessaria per la dimensione fissa della chat log */
+    /* Possiamo lasciare flex-direction se il form deve stare sotto, ma la chat log sarà fissa */
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .chat-section h2 {
+    margin-bottom: 10px;
+    color: #FFA500;
+  }
+  
+  /* Chat log: altezza fissa di 400px con scrollbar verticale */
+  .chat-log {
+    height: 400px; /* Altezza fissa */
+    overflow-y: auto; /* Aggiunge lo scrollbar verticale se il contenuto supera i 400px */
+    background-color: #fff;
+    padding: 10px;
+    border-radius: 5px;
+    margin-bottom: 10px;
+    color: #333;
+  }
+  
+  /* Form della chat */
+  .chat-section form {
+    display: flex;
+    gap: 10px;
+  }
+  
+  .chat-section input[type="text"] {
+    flex: 1;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    font-size: 1rem;
+  }
+  
+  .chat-section button {
+    padding: 10px 20px;
+    font-size: 1rem;
+    background-color: #FFA500;
+    color: #fff;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+  }
+  
+  .chat-section button:hover {
+    background-color: #FF4500;
+  }
+  
+  
+  /* Pulsante per avviare il gioco */
+  .start-game {
+    margin-top: 20px;
+    text-align: center;
+  }
+  
+  .start-game button {
+    padding: 10px 20px;
+    font-size: 1rem;
+    background-color: #FFA500;
+    color: #fff;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+  }
+  
+  .start-game button:disabled {
+    background-color: #ccc;
+    cursor: not-allowed;
+  }
+  
