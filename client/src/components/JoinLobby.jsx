@@ -40,6 +40,8 @@ const JoinLobby = () => {
     if (nickname.trim() !== '' && lobbyCode.trim() !== '') {
       // Emit the joinLobby event with the user's nickname and the lobby code
       socket.emit('joinLobby', { nickname, lobbyCode });
+    }else{
+      setErrorMessage('Please enter a nickname and lobby code');
     }
   };
 

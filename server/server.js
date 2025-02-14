@@ -104,7 +104,6 @@ socket.emit('welcomeMessage', { message: "Welcome to the Escape Room Server!" })
     }
   });
   
-  
 
   // Evento per gestire i messaggi della chat nella lobby
 socket.on('lobbyChatMessage', (data) => {
@@ -123,20 +122,44 @@ socket.on('lobbyChatMessage', (data) => {
   }
 });
 
-  
+socket.on('playerReady', (data) => {
+  const lobbyCode = socket.lobbyCode;
+  const ready = data.ready;
+  const nickname = socket.nickname;
 
-  // Evento per avviare il gioco
-  socket.on('startGame', () => {
-    const lobbyCode = socket.lobbyCode;
-    if (lobbyCode && lobbies[lobbyCode]) {
-      if (lobbies[lobbyCode].users.length >= 2) {
-        io.to(lobbyCode).emit('gameStarted', { message: 'Il gioco sta per iniziare!' });
-        console.log(`Il gioco è stato avviato per la lobby ${lobbyCode}`);
-      } else {
-        socket.emit('gameStartError', { message: 'Non ci sono abbastanza giocatori per iniziare il gioco.' });
+  if (lobbyCode && lobbies[lobbyCode]) {
+    if (!lobbies[lobbyCode].playerReadyStatus) {
+      lobbies[lobbyCode].playerReadyStatus = {};
+    }
+
+    lobbies[lobbyCode].playerReadyStatus[nickname] = ready;
+
+    let readyPlayers = 0;
+    for (const player in lobbies[lobbyCode].playerReadyStatus) {
+      if (lobbies[lobbyCode].playerReadyStatus[player] === true) {
+        readyPlayers++;
       }
     }
-  });
+
+    const totalPlayers = lobbies[lobbyCode].users.length;
+
+    io.to(lobbyCode).emit('gameStartUpdate', {
+      readyPlayers: readyPlayers,
+      totalPlayers: totalPlayers,
+      message: `Giocatori pronti: ${readyPlayers}/${totalPlayers}`
+    });
+
+    console.log(`Giocatore ${nickname} è ${ready ? 'pronto' : 'non pronto'} nella lobby ${lobbyCode}. Totale: ${readyPlayers}/${totalPlayers}`);
+
+    // Verifica se tutti i giocatori sono pronti
+    if (readyPlayers === totalPlayers && totalPlayers >= 2) {
+      io.to(lobbyCode).emit('gameStarted', { message: 'Il gioco sta per iniziare!' });
+      console.log(`Il gioco è stato avviato per la lobby ${lobbyCode}`);
+    }
+  }
+});
+
+
 
   // Gestione della disconnessione
   socket.on('disconnect', () => {

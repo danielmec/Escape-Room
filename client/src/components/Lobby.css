@@ -138,4 +138,29 @@
     background-color: #ccc;
     cursor: not-allowed;
   }
+
+/* Aggiungi questo codice al tuo file CSS (ad esempio, Lobby.css) */
+
+/* Countdown in primo piano con sfondo quadrato */
+.countdown {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  width: 350px;              /* Larghezza fissa per il box quadrato */
+  height: 350px;             /* Altezza fissa per il box quadrato */
+  transform: translate(-50%, -50%);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 10rem;          /* Numeri grandi */
+  color: rgb(255, 136, 0);
+  font-weight: bold;
+  background-color: rgba(0, 0, 0, 0.5); /* Sfondo nero leggero */
+  z-index: 1000;
+  pointer-events: none;      /* Permette di cliccare gli elementi sottostanti */
+  border-radius: 8px;        /* Angoli leggermente arrotondati (opzionale) */
+}
+
+
+
   

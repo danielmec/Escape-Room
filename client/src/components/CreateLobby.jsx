@@ -35,9 +35,11 @@ const CreateLobby = () => {
     e.preventDefault();
     if (nickname.trim() === '') {
       alert('Please enter a nickname');
+      return
     };
     if(numPlayers < 2 || numPlayers > 10) {
       alert('Number of players must be between 2 and 10');
+      return
     }
     // Emit 'createLobby' event with the parameters
     socket.emit('createLobby', {
