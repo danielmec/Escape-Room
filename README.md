@@ -16,6 +16,9 @@ Escape Room Multiplayer Game is a real-time web application where players collab
 ### Prerequisites
 - [Node.js](https://nodejs.org/) 
 - npm (comes with Node.js)
+- Express
+- Phaser
+- socket.io 
 
 ### Installation
 
