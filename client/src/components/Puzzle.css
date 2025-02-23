@@ -1,0 +1,76 @@
+.puzzle-container {
+    display: flex;
+    height: 100vh;
+    background-color: #000;
+    color: #fff;
+  }
+  
+  .puzzle-center {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+  }
+  
+
+  .puzzle-board-section {
+    flex: 3;
+    position: relative;
+  }
+  
+  .puzzle-game-board {
+    width: 100%;
+    height: 100%;
+    background-color: #000;
+    position: relative;
+  }
+  
+  .timer-display {
+    position: absolute;
+    top: 1rem;
+    left: 1rem;
+    font-size: 1.5rem;
+    color: #fff;
+  }
+  
+  .puzzle-arrow {
+    position: absolute;
+    bottom: 1rem;
+    left: 50%;
+    transform: translateX(-50%);
+    text-align: center;
+    cursor: pointer;
+    background: rgba(255, 255, 255, 0.1);
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+  }
+  
+  .arrow-icon {
+    font-size: 2rem;
+    display: block;
+  }
+
+
+  /* Modal di benvenuto/istruzioni in stile retro */
+.game-welcome-modal {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 100;
+  }
+  
+  .game-welcome-content {
+    background: #000;
+    color: #fff;
+    padding: 20px;
+    border: 2px solid #de7104;
+    text-align: center;
+    font-family: 'Press Start 2P', cursive;
+    font-size: 1.5rem;
+  }

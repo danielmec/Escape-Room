@@ -1,6 +1,9 @@
 /* client/src/components/CreateLobby.css */
 .create-lobby-container {
-  background: linear-gradient(135deg, #FFA500, #FF4500); /* sfumatura da arancione a rosso acceso */
+  /*background: linear-gradient(135deg, #FFA500, #FF4500); /* sfumatura da arancione a rosso acceso */
+  background-image: url('../assets/backgorund_game.webp');
+  background-size: cover;
+  background-position: center;
   min-height: 100vh;
   position: relative;
   display: flex;

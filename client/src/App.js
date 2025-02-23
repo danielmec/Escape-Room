@@ -1,43 +1,62 @@
 // client/src/App.js
 import React, { useRef, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import HomePage from './components/HomePage';
 import CreateLobby from './components/CreateLobby';
 import JoinLobby from './components/JoinLobby';
 import Options from './components/Options';
 import Lobby from './components/Lobby';
-import { MusicProvider, useMusic } from './components/MusicContext'; 
+import Game from './components/Game';
+import Puzzle from './components/Puzzle';
+import { MusicProvider, useMusic } from './components/MusicContext';
 
-// Componente che gestisce l'audio di sottofondo
 function BackgroundMusic() {
   const { musicOn } = useMusic();
+  const location = useLocation();
   const audioRef = useRef(null);
 
+  // Quando il percorso cambia, aggiorna il source solo se necessario.
+  useEffect(() => {
+    if (audioRef.current) {
+      const newMusicSource = location.pathname === '/game' ? '/game.mp3' : '/stranger.mp3';
+      // Poiché audioRef.current.src restituisce un URL assoluto, estraiamo solo il pathname.
+      const currentSrc = audioRef.current.src ? new URL(audioRef.current.src).pathname : "";
+      if (currentSrc !== newMusicSource) {
+        // Cambia traccia solo se è diverso
+        audioRef.current.pause();
+        audioRef.current.src = newMusicSource;
+        audioRef.current.load();
+        if (musicOn) {
+          audioRef.current.play().catch((err) =>
+            console.error("Errore durante la riproduzione dell'audio:", err)
+          );
+        }
+      }
+    }
+  }, [location, musicOn]);
+
+  // Gestione della riproduzione/pausa in base a musicOn
   useEffect(() => {
     if (audioRef.current) {
       if (musicOn) {
-        // Prova a riprodurre la musica 
-        audioRef.current.play().catch((err) => {
-          console.error("Errore durante la riproduzione dell'audio:", err);
-        });
+        audioRef.current.play().catch((err) =>
+          console.error("Errore durante la riproduzione dell'audio:", err)
+        );
       } else {
         audioRef.current.pause();
       }
     }
   }, [musicOn]);
 
-  return (
-    //L'audio si trova in public/stranger.mp3
-    <audio ref={audioRef} src="/stranger.mp3" loop />
-  );
+  return <audio ref={audioRef} src="/stranger.mp3" loop />;
 }
 
 function App() {
   return (
     <MusicProvider>
-      {/* Il componente BackgroundMusic sarà attivo in tutte le pagine */}
-      <BackgroundMusic />
       <Router>
+        {/* BackgroundMusic è dentro il Router per poter usare useLocation */}
+        <BackgroundMusic />
         <div className="App">
           <Routes>
             <Route path="/" element={<HomePage />} />
@@ -45,6 +64,8 @@ function App() {
             <Route path="/join" element={<JoinLobby />} />
             <Route path="/options" element={<Options />} />
             <Route path="/lobby" element={<Lobby />} />
+            <Route path="/game" element={<Game />} />
+            <Route path="/puzzle" element={<Puzzle />} />
           </Routes>
         </div>
       </Router>

@@ -1,15 +1,19 @@
 // client/src/components/Lobby.jsx
-import React, { use, useEffect, useState } from 'react';
-import { useLocation } from 'react-router-dom';
+import React, { useEffect, useState, useRef } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import Logo from './Logo';
 import './Lobby.css';
 import socket from '../socket';
 import bongsong from '../assets/count.mp3';
-import { useRef } from 'react';
 
 const Lobby = () => {
   const location = useLocation();
-  // Estrarre i dati dallo state della navigazione
+  const navigate = useNavigate(); // Corretto: useNavigate restituisce una funzione
+
+  // 1) Crea un ref
+  const chatLogRef = useRef(null);
+
+  // Estrai i dati dallo state della navigazione
   const {
     lobbyCode,
     difficulty,
@@ -25,20 +29,12 @@ const Lobby = () => {
   const [newMessage, setNewMessage] = useState('');
   const [readyPlayers, setReadyPlayers] = useState(0);
   const [totalPlayers, setTotalPlayers] = useState(0);
-  const [isReady, setIsReady] = useState(false); // Aggiunto per gestire il ready
+  const [isReady, setIsReady] = useState(false);
   const [counter, setCounter] = useState(null);
   const bongRef = useRef(null);
-  
-  // Inizializza il socket una sola volta
+
+  // Inizializza i listener del socket una sola volta
   useEffect(() => {
-
-      // Rimosso perche gia effetuato in Create o Join Lobby
-     /* if (lobbyCode && nickname) {
-        console.log(`Joining lobby ${lobbyCode} as ${nickname}`);
-        socket.emit('joinLobby', { lobbyCode, nickname });
-      }*/
-   
-
     // Ascolta gli aggiornamenti della lista degli utenti
     socket.on('lobbyUsers', (data) => {
       console.log('Received lobbyUsers on client:', data);
@@ -51,11 +47,12 @@ const Lobby = () => {
       setChatMessages(prev => [...prev, data]);
     });
 
-    // Altri eventi di debugging
+    // Eventi di debug
     socket.on('lobbyJoined', (data) => {
       console.log('Received lobbyJoined event:', data);
     });
 
+    // Quando riceviamo l'evento gameStarted, avvia il countdown
     socket.on('gameStarted', (data) => {
       console.log('Received gameStarted event:', data);
       setCounter(5);
@@ -67,46 +64,68 @@ const Lobby = () => {
 
     socket.on('gameStartUpdate', (data) => {
       console.log('Received gameStartUpdate:', data);
-      // Aggiorna lo stato del componente con il numero di giocatori pronti e il numero totale di giocatori
       setReadyPlayers(data.readyPlayers);
       setTotalPlayers(data.totalPlayers);
     });
+
+    // Pulizia dei listener al dismount del componente
+    return () => {
+      socket.off('lobbyUsers');
+      socket.off('lobbyChatMessage');
+      socket.off('lobbyJoined');
+      socket.off('gameStarted');
+      socket.off('gameStartError');
+      socket.off('gameStartUpdate');
+      socket.offAny();
+    };
+  }, []);
+
+  // Effettua l’auto-scroll
+  useEffect(() => {
+    if (chatLogRef.current) {
+      chatLogRef.current.scrollTop = chatLogRef.current.scrollHeight;
+    }
+  }, [chatMessages]);
+
+  useEffect(() => {
+    let timerId;
+    // Flag per indicare se il componente è smontato
+    let isCancelled = false;
   
-      // Cleanup: rimuovi i listener al dismount
-      return () => {
-        socket.off('lobbyUsers');
-        socket.off('lobbyChatMessage');
-        socket.off('lobbyJoined');
-        socket.off('gameStarted');
-        socket.off('gameStartError');
-        socket.off('gameStartUpdate');
-        socket.offAny();
-      };
-    }, [socket]);
-
-
-    useEffect(() => {
-      let timer;
-      if (counter !== null && counter > 0) {
-        // Decrementa il counter ogni secondo
-        timer = setTimeout(() => {
+    if (counter !== null && counter > 0) {
+      timerId = setTimeout(() => {
+        if (!isCancelled) {
           setCounter(prev => prev - 1);
-          // Riproduci il suono "bong"
           if (bongRef.current) {
-            bongRef.current.play();
+            bongRef.current
+              .play()
+              .catch((err) => console.log("Audio play error (non critico):", err));
           }
-        }, 1000);
-      } else if (counter === 0) {
-        // Quando il conto arriva a 0, puoi inserire qui la logica per avviare il gioco
-        console.log("Il gioco è iniziato!");
-      }
-      return () => clearTimeout(timer);
-    }, [counter]);
-
-
+        }
+      }, 1000);
+    } else if (counter === 0) {
+      console.log("Il gioco è iniziato!");
+      socket.emit('gameStarted', { lobbyCode });
+      navigate('/game', { 
+        state: { 
+          lobbyCode, 
+          difficulty, 
+          numPlayers, 
+          timer, 
+          users,
+          nickname
+        } 
+      });
+    }
+    return () => {
+      isCancelled = true;
+      clearTimeout(timerId);
+    };
+  }, [counter, navigate, lobbyCode, difficulty, numPlayers, timer, users]);
+  
   const sendMessage = (e) => {
     e.preventDefault();
-    if (newMessage.trim() !== '' ) {
+    if (newMessage.trim() !== '') {
       const messageData = { lobbyCode, nickname, message: newMessage };
       console.log('Sending message:', messageData);
       socket.emit('lobbyChatMessage', messageData);
@@ -118,12 +137,12 @@ const Lobby = () => {
 
   const toggleReady = () => {
     setIsReady(!isReady);
-    socket.emit('playerReady', { ready: !isReady,lobbyCode });//Invia al server il ready
-  }
+    socket.emit('playerReady', { ready: !isReady, lobbyCode });
+  };
 
   return (
     <div className="lobby-container">
-    <audio ref={bongRef} src={bongsong} preload='auto'/>
+      <audio ref={bongRef} src={bongsong} preload="auto" />
       <Logo />
       <div className="lobby-overlay">
         <h1>Lobby</h1>
@@ -142,17 +161,17 @@ const Lobby = () => {
               ))}
             </ul>
             <div>
-            <p>Giocatori pronti: {readyPlayers}/{totalPlayers}</p>
-          </div>
+              <p>Ready Players: {readyPlayers}/{totalPlayers}</p>
+            </div>
           </div>
           {counter !== null && (
-          <div className="countdown">
-            {counter > 0 ? counter :'GO!'}
+            <div className="countdown">
+              {counter > 0 ? counter : 'GO!'}
             </div>
-        )}
+          )}
           <div className="chat-section">
             <h2>Lobby Chat</h2>
-            <div className="chat-log">
+            <div className="chat-log" ref={chatLogRef}>
               {chatMessages.map((msg, index) => (
                 <div key={index} className="chat-message">
                   <strong>{msg.nickname}:</strong> {msg.message}
@@ -172,7 +191,7 @@ const Lobby = () => {
         </div>
         <div className="start-game">
           <button onClick={toggleReady} disabled={users.length < 2}>
-          {isReady ? 'Not Ready' : 'Ready'}
+            {isReady ? 'Not Ready' : 'Ready'}
           </button>
           {users.length < 2 && <p>At least 2 players are required to start the game.</p>}
         </div>

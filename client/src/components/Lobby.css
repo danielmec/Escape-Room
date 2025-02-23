@@ -1,166 +1,201 @@
 /* client/src/components/Lobby.css */
 
-/* Imposta lo sfondo con la stessa immagine della HomePage */
+html, body {
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden; /* Nasconde eventuale overflow orizzontale */
+  box-sizing: border-box;
+}
+
+/* Consigliato anche impostare box-sizing per tutti gli elementi */
+*, *::before, *::after {
+  box-sizing: inherit;
+}
+
+
+
+/* Sfondo e impostazioni generali */
 .lobby-container {
-    background-image: url('../assets/backgorund_game.webp'); /* Assicurati che il percorso sia corretto */
-    background-size: cover;
-    background-position: center;
-    min-height: 100vh;
-    position: relative;
-    font-family: Arial, sans-serif;
-    color: #fff;
-  }
-  
-  .lobby-overlay {
-    background: rgba(0, 0, 0, 0.7);
-    padding: 20px;
-    min-height: 100vh;
-  }
-  
-  /* Informazioni della lobby */
-  .lobby-info {
-    text-align: center;
-    margin-bottom: 20px;
-  }
-  
-  .lobby-info p {
-    margin: 5px 0;
-    font-size: 1.1rem;
-  }
-  
-  /* Layout del contenuto della lobby */
+  background-image: url('../assets/backgorund_game.webp'); /* Assicurati che il percorso sia corretto */
+  background-size: cover;
+  background-position: center;
+  min-height: 100vh;
+  position: relative;
+  font-family: Arial, sans-serif;
+  color: #fff;
+}
+
+.lobby-overlay {
+  background: rgba(0, 0, 0, 0.7);
+  padding: 20px;
+  min-height: 100vh;
+}
+
+/* Informazioni della lobby */
+.lobby-info {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.lobby-info p {
+  margin: 5px 0;
+  font-size: 1.1rem;
+}
+
+/* Layout delle colonne (utenti e chat) */
+.lobby-content {
+  display: flex;
+  gap: 20px;
+  margin-top: 20px;
+  height: 70vh;               /* Altezza fissa per l'area di contenuto */
+  align-items: stretch;       /* Forza entrambi i figli ad avere la stessa altezza */
+}
+
+@media (max-width: 768px) {
   .lobby-content {
-    display: flex;
-    gap: 20px;
-    margin-top: 20px;
-  }
-  
-  /* Sezione degli utenti */
-  .users-list {
-    flex: 1;
-    background-color: rgba(240, 240, 240, 0.9);
-    padding: 10px;
-    border-radius: 5px;
-    color: #333;
-  }
-  
-  .users-list h2 {
-    margin-bottom: 10px;
-    color: #FFA500;
-  }
-  
-  .users-list ul {
-    list-style-type: none;
-    padding: 0;
-  }
-  
-  .users-list li {
-    padding: 5px;
-    border-bottom: 1px solid #ccc;
-  }
-  
- /* Sezione della chat */
-.chat-section {
-    flex: 2;
-    background-color: rgba(224, 224, 224, 0.9);
-    padding: 10px;
-    border-radius: 5px;
-    max-width: 600px;
-    /* Rimuoviamo la proprietà flex-direction: column; se non necessaria per la dimensione fissa della chat log */
-    /* Possiamo lasciare flex-direction se il form deve stare sotto, ma la chat log sarà fissa */
-    display: flex;
+    /* Da layout orizzontale a verticale */
     flex-direction: column;
-  }
-  
-  .chat-section h2 {
-    margin-bottom: 10px;
-    color: #FFA500;
-  }
-  
-  /* Chat log: altezza fissa di 400px con scrollbar verticale */
-  .chat-log {
-    height: 400px; /* Altezza fissa */
-    overflow-y: auto; /* Aggiunge lo scrollbar verticale se il contenuto supera i 400px */
-    background-color: #fff;
-    padding: 10px;
-    border-radius: 5px;
-    margin-bottom: 10px;
-    color: #333;
-  }
-  
-  /* Form della chat */
-  .chat-section form {
-    display: flex;
     gap: 10px;
+    height: auto; /* Rimuovi l’altezza fissa */
   }
-  
-  .chat-section input[type="text"] {
-    flex: 1;
+  .users-list, .chat-section {
+    /* Larghezza piena */
+    width: 100%;
+    margin-bottom: 20px;
     padding: 10px;
-    border: 1px solid #ccc;
-    border-radius: 5px;
-    font-size: 1rem;
-  }
-  
-  .chat-section button {
-    padding: 10px 20px;
-    font-size: 1rem;
-    background-color: #FFA500;
-    color: #fff;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    transition: background-color 0.3s ease;
-  }
-  
-  .chat-section button:hover {
-    background-color: #FF4500;
-  }
-  
-  
-  /* Pulsante per avviare il gioco */
-  .start-game {
-    margin-top: 20px;
-    text-align: center;
-  }
-  
-  .start-game button {
-    padding: 10px 20px;
-    font-size: 1rem;
-    background-color: #FFA500;
-    color: #fff;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-  }
-  
-  .start-game button:disabled {
-    background-color: #ccc;
-    cursor: not-allowed;
   }
 
-/* Aggiungi questo codice al tuo file CSS (ad esempio, Lobby.css) */
+  /* Se vuoi forzare l’ordine (utenti sopra, chat sotto) */
+  .users-list {
+    order: 1;
+  }
+  .chat-section {
+    order: 2;
+  }
+}
+
+/* Sezione degli utenti */
+.users-list {
+  flex: 0.5;
+  background-color: rgba(240, 240, 240, 0.9);
+  padding: 10px;
+  border-radius: 5px;
+  color: #333;
+  overflow-y: auto;
+  /* Non è necessario impostare height: 100% qui se il contenitore ha align-items: stretch */
+}
+
+.users-list h2 {
+  margin: 0 0 10px;
+  color: #FFA500;
+}
+
+.users-list ul {
+  list-style-type: none;
+  padding: 0;
+  margin: 0;
+}
+
+.users-list li {
+  padding: 5px;
+  border-bottom: 1px solid #ccc;
+}
+
+/* Sezione della chat */
+.chat-section {
+  flex: 1;
+  background-color: rgba(224, 224, 224, 0.9);
+  padding: 20px;
+  border-radius: 5px;
+  display: flex;
+  flex-direction: column;
+  /* L'altezza si adatta per via di align-items: stretch sul contenitore */
+}
+
+.chat-section h2 {
+  margin: 0 0 10px;
+  color: #FFA500;
+}
+
+.chat-log {
+  /* Altezza fissa o max-height  */
+  height: 320px; /* oppure max-height: 250px; */
+  overflow-y: auto;
+  background-color: #fff;
+  padding: 10px;
+  border-radius: 5px;
+  margin-bottom: 10px;
+  color: #333;
+}
+
+
+/* Form della chat */
+.chat-section form {
+  display: flex;
+  gap: 10px;
+  margin: 0; /* Rimuove eventuali margini esterni */
+}
+
+.chat-section input[type="text"] {
+  flex: 1;
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  font-size: 1rem;
+}
+
+.chat-section button {
+  padding: 10px 20px;
+  font-size: 1rem;
+  background-color: #FFA500;
+  color: #fff;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.chat-section button:hover {
+  background-color: #FF4500;
+}
+
+/* Pulsante per avviare il gioco */
+.start-game {
+  margin-top: 20px;
+  text-align: center;
+}
+
+.start-game button {
+  padding: 10px 20px;
+  font-size: 1rem;
+  background-color: #FFA500;
+  color: #fff;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.start-game button:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
 
 /* Countdown in primo piano con sfondo quadrato */
 .countdown {
   position: fixed;
   top: 50%;
   left: 50%;
-  width: 350px;              /* Larghezza fissa per il box quadrato */
-  height: 350px;             /* Altezza fissa per il box quadrato */
+  width: 350px;
+  height: 350px;
   transform: translate(-50%, -50%);
   display: flex;
   justify-content: center;
   align-items: center;
-  font-size: 10rem;          /* Numeri grandi */
+  font-size: 10rem;
   color: rgb(255, 136, 0);
   font-weight: bold;
-  background-color: rgba(0, 0, 0, 0.5); /* Sfondo nero leggero */
+  background-color: rgba(0, 0, 0, 0.5);
   z-index: 1000;
-  pointer-events: none;      /* Permette di cliccare gli elementi sottostanti */
-  border-radius: 8px;        /* Angoli leggermente arrotondati (opzionale) */
+  pointer-events: none;
+  border-radius: 8px;
 }
-
-
-
-  
