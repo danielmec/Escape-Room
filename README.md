@@ -3,11 +3,8 @@
 ## Overview
 Escape Room Multiplayer Game is a real-time web application where players collaborate to solve puzzles and overcome challenges within a fixed time limit. In this game, users can create a lobby with customizable settings such as difficulty, number of players, location, and timer, or join an existing lobby by entering a unique room code. The application also features a real-time chat system to facilitate player communication during gameplay, all presented in an engaging 2D environment.
 
-## Features
-- **Lobby Management:** Create and manage game lobbies with customizable parameters.
-- **Real-Time Chat:** Communicate with other players instantly using an integrated chat system.
-- **Customizable Game Settings:** Adjust difficulty, player count, location, and timer settings for each lobby.
-- **Interactive Gameplay:** Solve puzzles and overcome challenges collaboratively in a 2D escape room.
+
+**Interactive Gameplay:** Solve puzzles and overcome challenges collaboratively in a 3D escape room.
 
 
 ## Technologies Used
