@@ -18,8 +18,8 @@ function BackgroundMusic() {
   // Quando il percorso cambia, aggiorna il source solo se necessario.
   useEffect(() => {
     if (audioRef.current) {
-      const newMusicSource = location.pathname === '/game' ? '/game.mp3' : '/stranger.mp3';
-      // Poiché audioRef.current.src restituisce un URL assoluto, estraiamo solo il pathname.
+
+      const newMusicSource = (location.pathname === '/game' || location.pathname === '/puzzle') ? '/game.mp3' : '/stranger.mp3';
       const currentSrc = audioRef.current.src ? new URL(audioRef.current.src).pathname : "";
       if (currentSrc !== newMusicSource) {
         // Cambia traccia solo se è diverso

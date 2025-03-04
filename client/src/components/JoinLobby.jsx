@@ -22,7 +22,7 @@ const JoinLobby = () => {
     });
 
     socket.on('capacity_error', (data) => {
-      setErrorMessage('Lobby piena');
+      setErrorMessage('Lobby is full');
     });
 
     return () => {

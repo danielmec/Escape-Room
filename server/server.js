@@ -320,18 +320,6 @@ socket.on('verifyQuiz', (data, callback) => {
   // Genera un set di 3 quiz casuali e lo salva nella lobby per verifica successiva.
   socket.on('requestQuizSet', (data) => {
     const { lobbyCode } = data;
-   /* const quizIndices = [];
-    while (quizIndices.length < 3 && quizIndices.length < quizImages.length) {
-      const rand = Math.floor(Math.random() * quizImages.length);
-      if (!quizIndices.includes(rand)) {
-        quizIndices.push(rand);
-      }
-    }
-    const quizSet = quizIndices.map(index => ({
-      id: index,
-      image: quizImages[index],
-      solution: quizSolutions[index]
-    }));*/
 
     const quizSet = getRandomQuizSet();
     if (lobbies[lobbyCode]) {

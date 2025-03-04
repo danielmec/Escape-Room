@@ -15,7 +15,7 @@ const Game = () => {
     lobbyCode,
     difficulty,
     numPlayers,
-    timer: initialTimerInMinutes = 1,
+    timer: initialTimerInMinutes ,
     users: initialUsers = [],
     nickname: initialNickname = '',
     currentRoom: initialCurrentRoom = 'room1',
@@ -120,13 +120,22 @@ useEffect(() => {
     setWinMessage(data.message);
     setWinModalVisible(true);
     setTimeout(() => {
-      navigate('/lobby', { state: { lobbyCode, nickname: initialNickname, users: initialUsers, difficulty, numPlayers, timer: initialTimerInMinutes } });
-    }, 7000); // Reindirizza alla lobby dopo 5 secondi
+      navigate('/lobby', { 
+        state: { 
+          lobbyCode, 
+          nickname: initialNickname, 
+          users: data.users,      // Usa la lista degli utenti ricevuta dal server
+          difficulty, 
+          numPlayers, 
+          timer: data.timer       // Usa il timer ricevuto dal server
+        } 
+      });
+    }, 7000);
   });
   return () => {
     socket.off('gameWon');
   };
-}, [navigate, lobbyCode, initialNickname, initialUsers, difficulty, numPlayers, initialTimerInMinutes]);
+}, [navigate, lobbyCode, initialNickname, difficulty, numPlayers]);
 
   // Timer decrementa ogni secondo
  useEffect(() => {
