@@ -208,30 +208,23 @@ class ServerManager {
       cors: { origin: "*", methods: ["GET", "POST"] }
     });
     this.PORT = process.env.PORT || 3001;
-    this.lobbies = {}; // Map: codeLobby -> istance of Lobby
+    this.lobbies = {}; // Mappa: codiceLobby -> istanza di Lobby
 
-    // Quiz data array: each element contains an image and its corresponding solution
-    this.quizData = [
-        { image: 'http://localhost:3001/assets/quiz11.jpg', solution: '42' },
-        { image: 'http://localhost:3001/assets/quiz22.jpg', solution: '5' },
-        { image: 'http://localhost:3001/assets/quiz33.jpg', solution: '18' },
-        { image: 'http://localhost:3001/assets/quiz44.jpg', solution: '30' },
-        { image: 'http://localhost:3001/assets/quiz55.jpg', solution: '24' },
-        { image: 'http://localhost:3001/assets/quiz66.jpg', solution: 'choices' },
-        { image: 'http://localhost:3001/assets/quiz77.jpg', solution: '10' },
-        { image: 'http://localhost:3001/assets/quiz88.jpg', solution: '21' }
-      ];
-      
-    // Create an array of Quiz instances from the quizData array
-    this.quizzes = this.createQuizInstances();
+    // Array per i quiz
+    this.quizImages = [
+      'http://localhost:3001/assets/quiz11.jpg',
+      'http://localhost:3001/assets/quiz22.jpg',
+      'http://localhost:3001/assets/quiz33.jpg',
+      'http://localhost:3001/assets/quiz44.jpg',
+      'http://localhost:3001/assets/quiz55.jpg',
+      'http://localhost:3001/assets/quiz66.jpg',
+      'http://localhost:3001/assets/quiz77.jpg',
+      'http://localhost:3001/assets/quiz88.jpg',
+    ];
+    this.quizSolutions = ['42', '5', '18', '30', '24', 'choices', '10', '21'];
 
     this.setupRoutes();
     this.setupSocket();
-  }
-
-   // Create Quiz instances from the provided data
-   createQuizInstances() {
-    return this.quizData.map((data, index) => new Quiz(index, data.image, data.solution));
   }
   
   setupRoutes() {
@@ -284,18 +277,17 @@ class ServerManager {
           socket.nickname = data.nickname;
           
           const user = new User(socket, data.nickname);
-          user.joinLobby(lobby);
-          
-          socket.emit('lobbyJoined', {
-            lobbyCode: lobby.code,
-            nickname: data.nickname,
-            users: lobby.users.map(u => u.nickname),
-            difficulty: lobby.difficulty,
-            numPlayers: lobby.numPlayers,
-            timer: lobby.timer,
-            visibility: lobby.visibility
-          });
-          
+          if (lobby.addUser(user)) {
+            socket.emit('lobbyJoined', {
+              lobbyCode: lobby.code,
+              nickname: data.nickname,
+              users: lobby.users.map(u => u.nickname),
+              difficulty: lobby.difficulty,
+              numPlayers: lobby.numPlayers,
+              timer: lobby.timer,
+              visibility: lobby.visibility
+            });
+          }
         } else {
           socket.emit('error', { message: 'Lobby not found' });
         }
@@ -354,16 +346,11 @@ class ServerManager {
       socket.on('requestQuizSet', (data) => {
         const lobby = this.lobbies[data.lobbyCode];
         if (lobby) {
-          // Se il quizSet non è ancora stato impostato, lo creiamo
-          if (!lobby.game.quizSet) {
-            const quizSet = this.getRandomQuizSet();
-            lobby.game.setQuizSet(quizSet);
-          }
-          // Invia il quizSet già presente a tutti i client della lobby
-          socket.emit('quizSet', lobby.game.quizSet);
+          const quizSet = this.getRandomQuizSet();
+          lobby.game.setQuizSet(quizSet);
+          socket.emit('quizSet', quizSet);
         }
       });
-      
       
       socket.on('initPuzzle', (data) => {
         const lobby = this.lobbies[data.lobbyCode];
@@ -387,84 +374,14 @@ class ServerManager {
           lobby.broadcast("puzzleVictory", { message: data.message });
         }
       });
-
-      // Quando l'utente decide di lasciare la lobby (ad esempio, cambiando pagina)
-      socket.on('leaveLobby', () => {
-        const lobbyCode = socket.lobbyCode;
-        if (lobbyCode && this.lobbies[lobbyCode]) {
-          const lobby = this.lobbies[lobbyCode];
-          lobby.removeUser({ nickname: socket.nickname });
-          socket.leave(lobbyCode);
-          // Se la lobby non ha più utenti, la rimuoviamo
-          if (lobby.users.length === 0) {
-            delete this.lobbies[lobbyCode];
-          }
-          // Aggiorniamo la lista delle lobby per tutti i client
-          this.io.emit('lobbiesList', Object.values(this.lobbies).map((lobby, index) => {
-            let isPublic = typeof lobby.visibility === 'string'
-              ? lobby.visibility.toLowerCase() === 'public'
-              : Boolean(lobby.visibility);
-            return {
-              name: `Lobby ${index + 1}`,
-              lobbyCode: isPublic ? lobby.code : '',
-              isPublic: isPublic,
-              currentUsers: lobby.users.length,
-              maxUsers: lobby.numPlayers
-            };
-          }));
-        }
-      });
       
       socket.on('disconnect', () => {
         const lobbyCode = socket.lobbyCode;
         if (lobbyCode && this.lobbies[lobbyCode]) {
           const lobby = this.lobbies[lobbyCode];
           lobby.removeUser({ nickname: socket.nickname });
-          socket.leave(lobbyCode);
           if (lobby.users.length === 0) {
             delete this.lobbies[lobbyCode];
-          }
-          // Aggiorna la lista delle lobby per tutti i client
-          this.io.emit('lobbiesList', Object.values(this.lobbies).map((lobby, index) => {
-            let isPublic = typeof lobby.visibility === 'string'
-              ? lobby.visibility.toLowerCase() === 'public'
-              : Boolean(lobby.visibility);
-            return {
-              name: `Lobby ${index + 1}`,
-              lobbyCode: isPublic ? lobby.code : '',
-              isPublic: isPublic,
-              currentUsers: lobby.users.length,
-              maxUsers: lobby.numPlayers
-            };
-          }));
-
-          // Controlla se in game è stato assegnato il roomAssignment
-          if (lobby.game && lobby.game.roomAssignments && 
-            lobby.game.roomAssignments.room2 && 
-            lobby.game.roomAssignments.room2.includes(socket.nickname)) {
-                
-            lobby.broadcast('InsufficientPlayers', { 
-                message: 'Not enough players in room2' ,
-                users: lobby.users.map(u => u.nickname)
-            });
-          }
-          // Rimozione del socket.nickname da room4, se presente
-          if (
-            lobby.game &&
-            lobby.game.roomAssignments &&
-            lobby.game.roomAssignments.room4
-          ) {
-            lobby.game.roomAssignments.room4 = lobby.game.roomAssignments.room4.filter(
-              user => user !== socket.nickname
-            );
-
-            // Se, dopo la rimozione, nella room4 rimane solo un giocatore (o nessuno)
-            if (lobby.game.roomAssignments.room4.length < 1) {
-              lobby.broadcast('InsufficientPlayers', {
-                message: 'Not enough players in room4',
-                users: lobby.users.map(u => u.nickname)
-              });
-            }
           }
         }
       });
@@ -475,16 +392,15 @@ class ServerManager {
     return Math.random().toString(36).substring(2, 8).toUpperCase();
   }
   
- // Randomly select 3 Quiz instances from the pre-created quizzes array
- getRandomQuizSet() {
+  getRandomQuizSet() {
     const quizIndices = [];
-    while (quizIndices.length < 3 && quizIndices.length < this.quizzes.length) {
-      const rand = Math.floor(Math.random() * this.quizzes.length);
+    while (quizIndices.length < 3 && quizIndices.length < this.quizImages.length) {
+      const rand = Math.floor(Math.random() * this.quizImages.length);
       if (!quizIndices.includes(rand)) {
         quizIndices.push(rand);
       }
     }
-    return quizIndices.map(index => this.quizzes[index]);
+    return quizIndices.map(index => new Quiz(index, this.quizImages[index], this.quizSolutions[index]));
   }
   
   listen() {

@@ -9,6 +9,7 @@ import Lobby from './components/Lobby';
 import Game from './components/Game';
 import Puzzle from './components/Puzzle';
 import { MusicProvider, useMusic } from './components/MusicContext';
+import useLeaveLobbyOnBack from './leaveLobby';
 
 function BackgroundMusic() {
   const { musicOn } = useMusic();
@@ -52,6 +53,7 @@ function BackgroundMusic() {
 }
 
 function App() {
+  useLeaveLobbyOnBack();
   return (
     <MusicProvider>
       <Router>

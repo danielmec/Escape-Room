@@ -28,9 +28,6 @@ const Game = () => {
   const [timer, setTimer] =  useState(
     remainingTime !== undefined ? remainingTime : initialTimerInMinutes * 60
   );
-  // Chat
-  const [chatMessages, setChatMessages] = useState([]);
-  const [newMessage, setNewMessage] = useState('');
 
   // Modal di benvenuto (Room1)
   const [showWelcome, setShowWelcome] = useState(initialCurrentRoom === 'room1');
@@ -59,19 +56,11 @@ const Game = () => {
 
   const [timeUpModalVisible, setTimeUpModalVisible] = useState(false);
 
+  const [insufficientPlayersVisible, setInsufficientPlayersVisible] = useState(false);
+  
   const [puzzleCompleted, setPuzzleCompleted] = useState(false);
   const [showPuzzleWarning, setShowPuzzleWarning] = useState(false);
 
-  // Ascolto messaggi chat
-  useEffect(() => {
-    socket.on('lobbyChatMessage', (data) => {
-      console.log('Chat message received:', data);
-      setChatMessages(prev => [...prev, data]);
-    });
-    return () => {
-      socket.off('lobbyChatMessage');
-    };
-  }, []);
 
   // Ascolto roomAssignment
   useEffect(() => {
@@ -136,6 +125,32 @@ useEffect(() => {
     socket.off('gameWon');
   };
 }, [navigate, lobbyCode, initialNickname, difficulty, numPlayers]);
+
+// Ascolto dell'evento "InsufficientPlayers" dal server:
+useEffect(() => {
+  socket.on('InsufficientPlayers', (data) => {
+    console.log('InsufficientPlayers event received:', data);
+    setInsufficientPlayersVisible(true);
+    setTimeout(() => {
+      navigate('/lobby', { 
+        state: { 
+          lobbyCode, 
+          nickname: initialNickname, 
+          users: data.users, 
+          difficulty, 
+          numPlayers, 
+          timer: initialTimerInMinutes 
+        } 
+      });
+    }, 5000);
+  });
+  return () => {
+    socket.off('InsufficientPlayers');
+  };
+}, [navigate, lobbyCode, initialNickname, initialUsers, difficulty, numPlayers, initialTimerInMinutes]);
+
+
+
 
   // Timer decrementa ogni secondo
  useEffect(() => {
@@ -313,6 +328,17 @@ useEffect(() => {
                 <p>In Room4, view each quiz image and share the code via chat.</p>
               )}
               <button onClick={handleInstructionsClose}>OK</button>
+            </div>
+          </div>
+        )}
+
+        {/* Modal per insufficient players */}
+        {insufficientPlayersVisible && (
+          <div className="game-welcome-modal">
+            <div className="game-welcome-content">
+              <p>Insufficient players</p>
+              <p>The game cannot continue due to missing players.</p>
+              <p>Redirecting to the lobby...</p>
             </div>
           </div>
         )}
