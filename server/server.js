@@ -211,15 +211,16 @@ class ServerManager {
     this.lobbies = {}; // Map: codeLobby -> istance of Lobby
 
     // Quiz data array: each element contains an image and its corresponding solution
+    const baseURL = process.env.NODE_ENV === 'production' ? '' : 'http://localhost:3001';
     this.quizData = [
-        { image: 'http://localhost:3001/assets/quiz11.jpg', solution: '42' },
-        { image: 'http://localhost:3001/assets/quiz22.jpg', solution: '5' },
-        { image: 'http://localhost:3001/assets/quiz33.jpg', solution: '18' },
-        { image: 'http://localhost:3001/assets/quiz44.jpg', solution: '30' },
-        { image: 'http://localhost:3001/assets/quiz55.jpg', solution: '24' },
-        { image: 'http://localhost:3001/assets/quiz66.jpg', solution: 'choices' },
-        { image: 'http://localhost:3001/assets/quiz77.jpg', solution: '10' },
-        { image: 'http://localhost:3001/assets/quiz88.jpg', solution: '21' }
+        { image: `${baseURL}/assets/quiz11.jpg`, solution: '42' },
+        { image: `${baseURL}/assets/quiz22.jpg`, solution: '5' },
+        { image: `${baseURL}/assets/quiz33.jpg`, solution: '18' },
+        { image: `${baseURL}/assets/quiz44.jpg`, solution: '30' },
+        { image: `${baseURL}/assets/quiz55.jpg`, solution: '24' },
+        { image: `${baseURL}/assets/quiz66.jpg`, solution: 'choices' },
+        { image: `${baseURL}/assets/quiz77.jpg`, solution: '10' },
+        { image: `${baseURL}/assets/quiz88.jpg`, solution: '21' }
       ];
       
     // Create an array of Quiz instances from the quizData array
