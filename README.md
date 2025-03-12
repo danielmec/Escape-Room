@@ -28,10 +28,10 @@ Escape Room Multiplayer Game is a real-time web application where players collab
 
 2. **Install dependencies:**
     ```bash
-    cd client
-    npm install
-    cd ../server
-    npm install
+    sudo apt install nodejs npm
+    npm install express
+    npm install phaser
+    npm install socket.io
 
 3. **Run server and client :**
 
