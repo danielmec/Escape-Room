@@ -142,7 +142,7 @@ useEffect(() => {
           timer: initialTimerInMinutes 
         } 
       });
-    }, 5000);
+    }, 6000);
   });
   return () => {
     socket.off('InsufficientPlayers');
@@ -150,22 +150,55 @@ useEffect(() => {
 }, [navigate, lobbyCode, initialNickname, initialUsers, difficulty, numPlayers, initialTimerInMinutes]);
 
 
+useEffect(() => {
+  const handleBeforeUnload = () => {
+    localStorage.setItem('oldSocketId', socket.id);
+  };
 
+  // Salviamo lo socket.id prima di chiudere la pagina o navigare via
+  window.addEventListener('beforeunload', handleBeforeUnload);
+
+  return () => {
+    window.removeEventListener('beforeunload', handleBeforeUnload);
+    localStorage.setItem('oldSocketId', socket.id);
+  };
+}, []);
 
   // Timer decrementa ogni secondo
- useEffect(() => {
-  if (timer > 0) {
-    const intervalId = setInterval(() => {
-      setTimer(prev => prev - 1);
-    }, 1000);
-    return () => clearInterval(intervalId);
-  } else if (timer === 0) {
-    setTimeUpModalVisible(true);
-    setTimeout(() => {
-      navigate('/lobby', { state: { lobbyCode, nickname: initialNickname, users: initialUsers, difficulty, numPlayers, timer: initialTimerInMinutes } });
-    }, 8000); // Reindirizza alla lobby dopo 5 secondi
-  }
-}, [timer, navigate, lobbyCode, initialNickname]);
+  useEffect(() => {
+    if (timer > 0) {
+      const intervalId = setInterval(() => {
+        setTimer(prev => prev - 1);
+      }, 1000);
+      return () => clearInterval(intervalId);
+    } else if (timer === 0) {
+      setTimeUpModalVisible(true);
+      // Attende 2 secondi prima di inviare il messaggio "TimeUp" al server
+      setTimeout(() => {
+        socket.emit('TimeUp', { lobbyCode, nickname: initialNickname });
+      }, 2000);
+    }
+  }, [timer, lobbyCode, initialNickname]);
+
+// Ascolta l'evento "timeUp" dal server per ottenere i dati aggiornati e navigare alla lobby
+useEffect(() => {
+  socket.on('timeUp', (data) => {
+    console.log('timeUp event received with data:', data);
+    navigate('/lobby', { 
+      state: { 
+        lobbyCode: data.lobbyCode, 
+        nickname: initialNickname, 
+        users: data.users, 
+        difficulty, 
+        numPlayers, 
+        timer: data.timer 
+      }
+    });
+  });
+  return () => {
+    socket.off('timeUp');
+  };
+}, [navigate, initialNickname, difficulty, numPlayers]);
 
   const formatTime = (seconds) => {
     const minutes = Math.floor(seconds / 60);
@@ -182,25 +215,27 @@ useEffect(() => {
   // Click sulla porta in Room1: controlla assegnazione e imposta la stanza corrente
   const handleDoorClick = () => {
     console.log('handleDoorClick triggered');
-    if (roomAssignment) {
-      let nextRoom;
-      if (roomAssignment.room2 && roomAssignment.room2.includes(initialNickname)) {
-        console.log(`${initialNickname} is assigned to room2`);
-        nextRoom = 'room2';
-      } else if (roomAssignment.room4 && roomAssignment.room4.includes(initialNickname)) {
-        console.log(`${initialNickname} is assigned to room4`);
-        nextRoom = 'room4';
-      } else {
-        console.warn('Nickname not assigned to any room:', initialNickname);
-        return;
-      }
-      setCurrentRoom(nextRoom);
-      socket.emit('enterRoom', { lobbyCode, nickname: initialNickname, nextRoom });
-      console.log('enterRoom event emitted with nextRoom:', nextRoom);
-      setShowInstructions(true);
-    } else {
-      console.warn('No roomAssignment received');
+    if (!roomAssignment) {
+      console.warn('No roomAssignment received. Richiedo roomAssignment dal server.');
+      socket.emit('requestRoomAssignment', { lobbyCode, nickname: initialNickname });
+      return;
     }
+  
+    let nextRoom;
+    if (roomAssignment.room2 && roomAssignment.room2.includes(initialNickname)) {
+      console.log(`${initialNickname} is assigned to room2`);
+      nextRoom = 'room2';
+    } else if (roomAssignment.room4 && roomAssignment.room4.includes(initialNickname)) {
+      console.log(`${initialNickname} is assigned to room4`);
+      nextRoom = 'room4';
+    } else {
+      console.warn('Nickname not assigned to any room:', initialNickname);
+      return;
+    }
+    setCurrentRoom(nextRoom);
+    socket.emit('enterRoom', { lobbyCode, nickname: initialNickname, nextRoom });
+    console.log('enterRoom event emitted with nextRoom:', nextRoom);
+    setShowInstructions(true);
   };
 
   // Seleziona l'immagine della stanza in base a currentRoom

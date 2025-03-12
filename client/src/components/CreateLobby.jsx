@@ -41,7 +41,7 @@ const CreateLobby = () => {
     } else if (difficulty === 'Medium') {
       adjustedTimer = 8;
     } else if (difficulty === 'Hard') {
-      adjustedTimer = 6;
+      adjustedTimer = 5;
     }
     // Emit 'createLobby' event con i parametri, inclusa la visibilità
     socket.emit('createLobby', {

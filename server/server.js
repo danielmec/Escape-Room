@@ -45,7 +45,7 @@ class Quiz {
 }
 
 //
-// Classe per gestire il Puzzle (es. gioco dello sliding 3x3)
+// Classe per gestire il Puzzle 
 //
 class Puzzle {
   constructor(moves = 50) {
@@ -94,6 +94,18 @@ class Game {
     this.verifiedQuizSolutions = {}; 
     this.puzzle = null;            // Istanza di Puzzle
     this.roomAssignments = null;
+    this.gameInProgress = false;
+    this.startTime = null;
+    this.durationSeconds = Number(lobby.timer) * 60;
+  }
+
+  // Metodo per calcolare il tempo residuo in secondi
+  getRemainingTime() {
+    if (!this.startTime) return this.durationSeconds;
+    const elapsed = Math.floor((Date.now() - this.startTime) / 1000);
+    const remaining = this.durationSeconds - elapsed;
+    console.log(`Elapsed: ${elapsed} sec, Duration: ${this.durationSeconds} sec, Remaining: ${remaining} sec`);
+    return Math.max(remaining, 0);
   }
   
   updatePlayerReady(nickname, ready) {
@@ -116,11 +128,11 @@ class Game {
   }
   
   assignRooms() {
-    const users = this.lobby.users;
-    if (users.length === 0) return;
-    const randomIndex = Math.floor(Math.random() * users.length);
-    const room2Players = [users[randomIndex].nickname];
-    const room4Players = users.filter((u, i) => i !== randomIndex).map(u => u.nickname);
+    this.assignedUserNames = this.lobby.users.map(u => u.nickname);
+    if (this.assignedUserNames.length === 0) return;
+    const randomIndex = Math.floor(Math.random() * this.assignedUserNames.length);
+    const room2Players = [this.assignedUserNames[randomIndex]];
+    const room4Players = this.assignedUserNames.filter((name, i) => i !== randomIndex);
     this.roomAssignments = { room2: room2Players, room4: room4Players };
     this.lobby.broadcast('roomAssignment', this.roomAssignments);
   }
@@ -137,6 +149,7 @@ class Game {
           users: this.lobby.users.map(u => u.nickname),
           timer: this.lobby.timer  // Timer salvato della lobby
         });
+        this.gameInProgress = false;
       }
       callback({ success: true });
     } else {
@@ -209,6 +222,7 @@ class ServerManager {
     });
     this.PORT = process.env.PORT || 3001;
     this.lobbies = {}; // Map: codeLobby -> istance of Lobby
+    this.disconnectedUsers = {}; // Map: socketId -> { lobby, timer, nickname }
 
     // Quiz data array: each element contains an image and its corresponding solution
     const baseURL = process.env.NODE_ENV === 'production' ? '' : 'http://localhost:3001';
@@ -301,6 +315,65 @@ class ServerManager {
           socket.emit('error', { message: 'Lobby not found' });
         }
       });
+
+      socket.on('checkActiveGame', (data) => {
+        const oldSocketId = data.oldSocketId;
+        if (this.disconnectedUsers[oldSocketId]) {
+          const { lobby, timer, nickname } = this.disconnectedUsers[oldSocketId];
+          if (lobby.game && lobby.game.gameInProgress) {
+            clearTimeout(timer);
+            delete this.disconnectedUsers[oldSocketId];
+           
+            socket.lobbyCode = lobby.code;
+            socket.nickname = nickname;
+            
+            const existingUserIndex = lobby.users.findIndex(u => u.nickname === nickname);
+            if (existingUserIndex !== -1) {
+              lobby.users[existingUserIndex].socket = socket;
+            } else {
+              const user = new User(socket, nickname);
+              user.joinLobby(lobby);
+            }
+            
+            // Assicurati che roomAssignments sia valorizzato
+            if (!lobby.game.roomAssignments) {
+              //lobby.game.assignRooms();
+              console.log(`assignRooms chiamato per lobby ${lobby.code}:`, lobby.game.roomAssignments);
+            } else {
+              console.log(`RoomAssignment già presente per lobby ${lobby.code}:`, lobby.game.roomAssignments);
+            }
+            
+            socket.emit('roomAssignment', lobby.game.roomAssignments);
+            
+            const remainingTime = lobby.game.getRemainingTime(); // in secondi
+            socket.emit('reconnectAllowed', {
+              lobbyCode: lobby.code,
+              nickname,
+              users: lobby.users.map(u => u.nickname),
+              difficulty: lobby.difficulty,
+              numPlayers: lobby.numPlayers,
+              remainingTimer: Math.floor(remainingTime), // tempo in minuti
+              timer: lobby.timer,
+              roomAssignment: lobby.game.roomAssignments
+            });
+            
+          } else {
+            socket.emit('noActiveGame', { message: 'Nessun gioco attivo da riprendere' });
+          }
+        } else {
+          socket.emit('noActiveGame', { message: 'Nessun gioco attivo per questo identificativo' });
+        }
+      });
+
+      socket.on('requestRoomAssignment', (data) => {
+        const lobby = this.lobbies[data.lobbyCode];
+        if (lobby && lobby.game && lobby.game.roomAssignments) {
+          socket.emit('roomAssignment', lobby.game.roomAssignments);
+          console.log(`RoomAssignment inviato al socket ${socket.id}:`, lobby.game.roomAssignments);
+        } else {
+          socket.emit('error', { message: 'Room assignment not available' });
+        }
+      });
       
       socket.on('getLobbies', () => {
         const lobbyList = Object.values(this.lobbies).map((lobby, index) => {
@@ -339,7 +412,10 @@ class ServerManager {
       socket.on('gameStarted', () => {
         const lobby = this.lobbies[socket.lobbyCode];
         if (lobby) {
-          lobby.game.assignRooms();
+          lobby.game.assignRooms(); // Questo valorizza roomAssignments
+          lobby.game.gameInProgress = true;
+          lobby.game.startTime = Date.now();
+          console.log(`Game started in lobby ${lobby.code}. Duration: ${lobby.game.durationSeconds} sec`);
         }
       });
       
@@ -389,91 +465,130 @@ class ServerManager {
         }
       });
 
-      // Quando l'utente decide di lasciare la lobby (ad esempio, cambiando pagina)
-      socket.on('leaveLobby', () => {
-        const lobbyCode = socket.lobbyCode;
-        if (lobbyCode && this.lobbies[lobbyCode]) {
-          const lobby = this.lobbies[lobbyCode];
-          lobby.removeUser({ nickname: socket.nickname });
-          socket.leave(lobbyCode);
-          // Se la lobby non ha più utenti, la rimuoviamo
-          if (lobby.users.length === 0) {
-            delete this.lobbies[lobbyCode];
-          }
-          // Aggiorniamo la lista delle lobby per tutti i client
-          this.io.emit('lobbiesList', Object.values(this.lobbies).map((lobby, index) => {
-            let isPublic = typeof lobby.visibility === 'string'
-              ? lobby.visibility.toLowerCase() === 'public'
-              : Boolean(lobby.visibility);
-            return {
-              name: `Lobby ${index + 1}`,
-              lobbyCode: isPublic ? lobby.code : '',
-              isPublic: isPublic,
-              currentUsers: lobby.users.length,
-              maxUsers: lobby.numPlayers
-            };
-          }));
+      socket.on('TimeUp', (data) => {
+        const lobby = this.lobbies[data.lobbyCode];
+        if (lobby) {
+          // Imposta il gioco come non in progress
+          lobby.game.gameInProgress = false;
+          // Invia al client i dati aggiornati della lobby: code, timer e users
+          lobby.broadcast('timeUp', {
+            lobbyCode: lobby.code,
+            timer: lobby.timer,
+            users: lobby.users.map(u => u.nickname)
+          });
+          console.log(`TimeUp processed for lobby ${lobby.code}`);
         }
+      });
+
+      // Quando l'utente decide di lasciare la lobby o si disconnette
+      socket.on('leaveLobby', () => {
+        this.handleUserLeaving(socket);
       });
       
       socket.on('disconnect', () => {
+        this.handleUserLeaving(socket);
         const lobbyCode = socket.lobbyCode;
         if (lobbyCode && this.lobbies[lobbyCode]) {
           const lobby = this.lobbies[lobbyCode];
-          lobby.removeUser({ nickname: socket.nickname });
-          socket.leave(lobbyCode);
-          if (lobby.users.length === 0) {
-            delete this.lobbies[lobbyCode];
-          }
-          // Aggiorna la lista delle lobby per tutti i client
-          this.io.emit('lobbiesList', Object.values(this.lobbies).map((lobby, index) => {
-            let isPublic = typeof lobby.visibility === 'string'
-              ? lobby.visibility.toLowerCase() === 'public'
-              : Boolean(lobby.visibility);
-            return {
-              name: `Lobby ${index + 1}`,
-              lobbyCode: isPublic ? lobby.code : '',
-              isPublic: isPublic,
-              currentUsers: lobby.users.length,
-              maxUsers: lobby.numPlayers
-            };
-          }));
-
-          // Controlla se in game è stato assegnato il roomAssignment
-          if (lobby.game && lobby.game.roomAssignments && 
-            lobby.game.roomAssignments.room2 && 
-            lobby.game.roomAssignments.room2.includes(socket.nickname)) {
-                
-            lobby.broadcast('InsufficientPlayers', { 
-                message: 'Not enough players in room2' ,
-                users: lobby.users.map(u => u.nickname)
-            });
-          }
-          // Rimozione del socket.nickname da room4, se presente
-          if (
-            lobby.game &&
-            lobby.game.roomAssignments &&
-            lobby.game.roomAssignments.room4
-          ) {
-            lobby.game.roomAssignments.room4 = lobby.game.roomAssignments.room4.filter(
-              user => user !== socket.nickname
-            );
-
-            // Se, dopo la rimozione, nella room4 rimane solo un giocatore (o nessuno)
-            if (lobby.game.roomAssignments.room4.length < 1) {
-              lobby.broadcast('InsufficientPlayers', {
-                message: 'Not enough players in room4',
-                users: lobby.users.map(u => u.nickname)
-              });
-            }
-          }
+          this.checkInsufficientPlayers(lobby, socket.nickname,socket.id);
         }
       });
+
     });
   }
   
   static generateLobbyCode() {
     return Math.random().toString(36).substring(2, 8).toUpperCase();
+  }
+
+    handleUserLeaving(socket) {
+      const lobbyCode = socket.lobbyCode;
+      if (lobbyCode && this.lobbies[lobbyCode]) {
+        const lobby = this.lobbies[lobbyCode];
+        lobby.removeUser({ nickname: socket.nickname });
+        socket.leave(lobbyCode);
+        if (lobby.users.length === 0) {
+          delete this.lobbies[lobbyCode];
+        }
+        this.updateLobbiesList();
+      }
+  }
+  
+
+  updateLobbiesList() {
+    const lobbyList = Object.values(this.lobbies).map((lobby, index) => {
+      let isPublic = typeof lobby.visibility === 'string'
+        ? lobby.visibility.toLowerCase() === 'public'
+        : Boolean(lobby.visibility);
+      return {
+        name: `Lobby ${index + 1}`,
+        lobbyCode: isPublic ? lobby.code : '',
+        isPublic: isPublic,
+        currentUsers: lobby.users.length,
+        maxUsers: lobby.numPlayers
+      };
+    });
+    this.io.emit('lobbiesList', lobbyList);
+  }
+
+  checkInsufficientPlayers(lobby, socketNickname, socketId) {
+    let insufficientTrigger = false;
+    
+    // Controllo per room2: verifica quanti giocatori attivi sono in room2
+    if (
+      lobby.game &&
+      lobby.game.roomAssignments &&
+      lobby.game.roomAssignments.room2 &&
+      lobby.game.roomAssignments.room2.includes(socketNickname)
+    ) {
+      const activeRoom2 = lobby.users.filter(u => lobby.game.roomAssignments.room2.includes(u.nickname));
+      if (activeRoom2.length < 1) {
+        lobby.broadcast('InsufficientPlayers', { 
+          message: 'Not enough players in room2',
+          users: lobby.users.map(u => u.nickname)
+        });
+        insufficientTrigger = true;
+      }
+    }
+    
+    // Controllo per room4: qui verifichiamo quanti giocatori attivi sono in room4
+    if (
+      lobby.game &&
+      lobby.game.roomAssignments &&
+      lobby.game.roomAssignments.room4
+    ) {
+      const activeRoom4 = lobby.users.filter(u => lobby.game.roomAssignments.room4.includes(u.nickname));
+      if (activeRoom4.length < 1) {
+        insufficientTrigger = true;
+        lobby.broadcast('InsufficientPlayers', {
+          message: 'Not enough players in room4',
+          users: lobby.users.map(u => u.nickname)
+        });
+      }
+    }
+    
+    // Se non c'è trigger di insufficienza, avvia un timer per la rimozione definitiva
+    if (!insufficientTrigger) {
+      const removalTimer = setTimeout(() => {
+        const stillPresent = lobby.users.find(u => u.nickname === socketNickname);
+        if (stillPresent) {
+          lobby.removeUser({ nickname: socketNickname });
+          lobby.broadcast('playerRemoved', { 
+            message: `${socketNickname} rimosso dalla lobby per mancata riconnessione`,
+            users: lobby.users.map(u => u.nickname)
+          });
+          this.updateLobbiesList();
+        }
+        console.log(`Timer scaduto per socket ${socketId}. Rimuovo dai disconnectedUsers`);
+        delete this.disconnectedUsers[socketId];
+        console.log('disconnectedUsers aggiornato:', this.disconnectedUsers);
+      }, 30000);
+      
+      this.disconnectedUsers[socketId] = { lobby, timer: removalTimer, nickname: socketNickname };
+      console.log(`Aggiunto disconnectedUser per socket ${socketId}:`, this.disconnectedUsers[socketId]);
+    } else {
+      console.log(`InsufficientTrigger attivato per ${socketNickname}. Nessun timer impostato.`);
+    }
   }
   
  // Randomly select 3 Quiz instances from the pre-created quizzes array
