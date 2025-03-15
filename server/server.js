@@ -335,7 +335,7 @@ class ServerManager {
               user.joinLobby(lobby);
             }
             
-            // Assicurati che roomAssignments sia valorizzato
+            
             if (!lobby.game.roomAssignments) {
               //lobby.game.assignRooms();
               console.log(`assignRooms chiamato per lobby ${lobby.code}:`, lobby.game.roomAssignments);
