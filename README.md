@@ -40,4 +40,6 @@ Escape Room Multiplayer Game is a real-time web application where players collab
     node server.js
     cd client
     npm start
-
+    
+### Deployment
+ This project has been deployed to https://escaperoom-62026c75b645.herokuapp.com
