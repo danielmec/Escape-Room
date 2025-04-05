@@ -1,6 +1,6 @@
 /* client/src/components/HomePage.css */
 .home-container {
-  /* Usa l'immagine di sfondo (modifica il percorso se necessario) */
+  /* Usa l'immagine di sfondo */
   background-image: url('../assets/backgorund_game.webp');
   background-size: cover;
   background-position: center;

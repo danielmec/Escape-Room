@@ -50,8 +50,8 @@
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  width: 10vh; /* oppure usa unità relative, ad esempio 10%, se preferisci */
-  height: 15vh; /* oppure 15% */
+  width: 10vh; 
+  height: 15vh; 
   cursor: pointer;
   z-index: 5;
 
@@ -161,7 +161,6 @@
   border: 1px solid #fff;
   border-radius: 8px;
   z-index: 20;
-  /* Imposta top e left come desideri (esempio): */
   top: 46%; 
   left: 69%;
   transform: translate(-50%, -50%);

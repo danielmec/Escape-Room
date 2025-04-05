@@ -1,17 +1,23 @@
 // client/src/components/HomePage.jsx
 import React,  { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import socket from '../socket';
 import './HomePage.css';
 
 const HomePage = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const passedOldSocketId = location.state?.oldSocketId;
+  const storedOldSocketId = localStorage.getItem('oldSocketId');
+  const oldSocketId = passedOldSocketId || storedOldSocketId;
 
   useEffect(() => {
-    const oldSocketId = localStorage.getItem('oldSocketId');
-    console.log("Old Socket Id from localStorage:", oldSocketId);
+    console.log("storedOldSocketId:", storedOldSocketId);
+    console.log("passedOldSocketId:", passedOldSocketId);
+    console.log("Old Socket Id:", oldSocketId);
     console.log("Current socket id:", socket.id);
     if (oldSocketId) {
+      // Invia oldSocketId tramite il campo data
       socket.emit('checkActiveGame', { oldSocketId });
     }
     
@@ -38,7 +44,7 @@ const HomePage = () => {
       socket.off('reconnectAllowed');
       socket.off('noActiveGame');
     }
-  }, [navigate]);
+  }, [navigate, oldSocketId]);
 
   const handleCreateLobby = () => {
     navigate('createlobby');

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import socket from "../socket";
 import Chat from "./Chat";
-import "./Puzzle.css"; // Assicurati che questo file contenga anche la regola per .puzzle-center
+import "./Puzzle.css"; 
 import EightPuzzleGame from "./8Multiplayer";
 
 const Puzzle = () => {
@@ -18,18 +18,24 @@ const Puzzle = () => {
     timer: initialTimerInMinutes,
     quizSet,
     roomAssignment,
+    endTimeStamp // campo per il timestamp di fine
   } = location.state || {};
 
   // Stato per la chat
   const [chatMessages, setChatMessages] = useState([]);
   const [newMessage, setNewMessage] = useState("");
   
-  // Se viene passato remainingTime, lo usiamo, altrimenti calcoliamo dal timer iniziale
-  const [remainingTime, setRemainingTime] = useState(
-    location.state.remainingTime !== undefined
-      ? location.state.remainingTime
-      : initialTimerInMinutes * 60
-  );
+ // Utilizza il timestamp di fine per calcolare il tempo rimanente
+  const [remainingTime, setRemainingTime] = useState(() => {
+  if (endTimeStamp) {
+    return Math.max(0, Math.floor((endTimeStamp - Date.now()) / 1000));
+  }
+  // Fallback alla vecchia logica se endTimeStamp non è disponibile
+  return location.state.remainingTime !== undefined 
+    ? location.state.remainingTime 
+    : initialTimerInMinutes * 60;
+});
+
   const [timeUpModalVisible, setTimeUpModalVisible] = useState(false);
   const [puzzleVictory, setPuzzleVictory] = useState(false);
 
@@ -37,7 +43,13 @@ const Puzzle = () => {
   useEffect(() => {
     if (remainingTime > 0) {
       const intervalId = setInterval(() => {
-        setRemainingTime((prev) => prev - 1);
+        if (endTimeStamp) {
+          const secondsLeft = Math.max(0, Math.floor((endTimeStamp - Date.now()) / 1000));
+          setRemainingTime(secondsLeft);
+        } else {
+          // Decrementa il tempo rimanente ogni secondo
+          setRemainingTime((prev) => prev - 1);
+        }
       }, 1000);
       return () => clearInterval(intervalId);
     } else if (remainingTime === 0) {
@@ -82,6 +94,7 @@ const Puzzle = () => {
         difficulty,
         numPlayers,
         remainingTime,
+        endTimeStamp,
         quizSet,
         roomAssignment,
         currentRoom: "room4",

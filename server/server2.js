@@ -3,7 +3,7 @@ const { log } = require('console');
 const express = require('express');
 const http = require('http');
 const socketIo = require('socket.io');
-const path = require('path');
+
 //
 // Classe che rappresenta un utente connesso
 //
@@ -250,16 +250,8 @@ class ServerManager {
   }
   
   setupRoutes() {
-      // Serve le immagini dal server (cartella public)
-    this.app.use('/assets', express.static(path.join(__dirname, 'public','assets')));
-
-    // Serve l'app React (build generato in client/build)
-    this.app.use(express.static(path.join(__dirname, '..', 'client', 'build')));
-
-    // Per ogni altra richiesta, restituisce il file index.html della build
-   this.app.get('*', (req, res) => {
-      res.sendFile(path.join(__dirname, '..', 'client', 'build', 'index.html'));
-    });
+    this.app.use(express.static('public'));
+    this.app.get('/', (req, res) => res.send('Server is running'));
   }
   
   setupSocket() {
@@ -301,7 +293,7 @@ class ServerManager {
       // Unione a una lobby esistente
       socket.on('joinLobby', (data) => {
         const lobby = this.lobbies[data.lobbyCode];
-        if (lobby && lobby.users.length < lobby.numPlayers) {
+        if (lobby) {
           // Imposta le proprietà sul socket
           socket.lobbyCode = data.lobbyCode;
           socket.nickname = data.nickname;

@@ -24,11 +24,7 @@ const Game = () => {
     roomAssignment: initialRoomAssignment
   } = location.state || {};
 
-  // Timer (in secondi)
-  const [timer, setTimer] =  useState(
-    remainingTime !== undefined ? remainingTime : initialTimerInMinutes * 60
-  );
-
+ 
   // Modal di benvenuto (Room1)
   const [showWelcome, setShowWelcome] = useState(initialCurrentRoom === 'room1');
   // Modal di istruzioni (appare dopo il click sulla porta)
@@ -61,6 +57,56 @@ const Game = () => {
   const [puzzleCompleted, setPuzzleCompleted] = useState(false);
   const [showPuzzleWarning, setShowPuzzleWarning] = useState(false);
 
+
+  // stato per il timestamp di fine
+  const [endTimeStamp, setEndTimeStamp] = useState(() => {
+    // Se viene fornito da location.state, viene usato
+    if (location.state?.endTimeStamp) {
+      return location.state.endTimeStamp;
+    }
+    // Altrimenti calcolalo (solo alla prima inizializzazione)
+    return Date.now() + (remainingTime !== undefined ? remainingTime * 1000 : initialTimerInMinutes * 60 * 1000);
+  });
+
+   // Timer (in secondi)
+const [timer, setTimer] = useState(() => {
+  const secondsLeft = Math.max(0, Math.floor((endTimeStamp - Date.now()) / 1000));
+  return secondsLeft;
+});
+
+
+  useEffect(() => {
+    const oldSocketId = localStorage.getItem('oldSocketId');
+    console.log("Old Socket Id from localStorage:", oldSocketId);
+    console.log("Current socket id:", socket.id);
+    if (oldSocketId) {
+      socket.emit('checkActiveGame', { oldSocketId });
+    }
+    // Se non c'è oldSocketId, significa che è la prima volta che si entra nel gioco
+    socket.on('reconnectAllowed', (data) => {
+      console.log("Ricevuto reconnectAllowed:", data);
+      localStorage.removeItem('oldSocketId');
+      navigate('/game', { state: { 
+        lobbyCode: data.lobbyCode,
+        nickname: data.nickname,
+        users: data.users,
+        difficulty: data.difficulty,
+        numPlayers: data.numPlayers,
+        remainingTime: data.remainingTimer,
+        timer: data.timer,
+        roomAssignment: data.roomAssignment
+      }});
+    });
+    socket.on('noActiveGame', (data) => {
+      console.log("Ricevuto noActiveGame:", data);
+      localStorage.removeItem('oldSocketId');
+    });
+    
+    return () => {
+      socket.off('reconnectAllowed');
+      socket.off('noActiveGame');
+    }
+  }, [navigate]);
 
   // Ascolto roomAssignment
   useEffect(() => {
@@ -155,7 +201,7 @@ useEffect(() => {
     localStorage.setItem('oldSocketId', socket.id);
   };
 
-  // Salviamo lo socket.id prima di chiudere la pagina o navigare via
+  // Salvare lo socket.id prima di chiudere la pagina o navigare via
   window.addEventListener('beforeunload', handleBeforeUnload);
 
   return () => {
@@ -164,21 +210,21 @@ useEffect(() => {
   };
 }, []);
 
-  // Timer decrementa ogni secondo
-  useEffect(() => {
-    if (timer > 0) {
-      const intervalId = setInterval(() => {
-        setTimer(prev => prev - 1);
-      }, 1000);
-      return () => clearInterval(intervalId);
-    } else if (timer === 0) {
-      setTimeUpModalVisible(true);
-      // Attende 2 secondi prima di inviare il messaggio "TimeUp" al server
-      setTimeout(() => {
-        socket.emit('TimeUp', { lobbyCode, nickname: initialNickname });
-      }, 2000);
-    }
-  }, [timer, lobbyCode, initialNickname]);
+  // Timer decrementa ogni secondo - MODIFICA QUESTO useEffect
+useEffect(() => {
+  if (timer > 0) {
+    const intervalId = setInterval(() => {
+      const secondsLeft = Math.max(0, Math.floor((endTimeStamp - Date.now()) / 1000));
+      setTimer(secondsLeft);
+    }, 1000);
+    return () => clearInterval(intervalId);
+  } else if (timer === 0) {
+    setTimeUpModalVisible(true);
+    setTimeout(() => {
+      socket.emit('TimeUp', { lobbyCode, nickname: initialNickname });
+    }, 2000);
+  }
+}, [timer, endTimeStamp, lobbyCode, initialNickname]);
 
 // Ascolta l'evento "timeUp" dal server per ottenere i dati aggiornati e navigare alla lobby
 useEffect(() => {
@@ -300,20 +346,22 @@ useEffect(() => {
     setActiveQuiz(null);
   };
 
-  const handlePuzzleClick = () => {
-    navigate('/puzzle', {
-       state: { 
-       lobbyCode,
-       nickname: initialNickname,
-       difficulty, 
-       numPlayers,
-       remainingTime: timer,
-       quizSet,
-       roomAssignment, 
-       currentRoom: 'room4'
-      }
-     });
-  };
+  // Modifica la funzione handlePuzzleClick per passare l'endTimeStamp
+const handlePuzzleClick = () => {
+  navigate('/puzzle', {
+    state: { 
+      lobbyCode,
+      nickname: initialNickname,
+      difficulty, 
+      numPlayers,
+      remainingTime: timer, // manteniamo per compatibilità
+      endTimeStamp, // passiamo il timestamp assoluto
+      quizSet,
+      roomAssignment, 
+      currentRoom: 'room4'
+    }
+  });
+};
 
   return (
     <div className="game-container">
